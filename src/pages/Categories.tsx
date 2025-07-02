@@ -318,9 +318,9 @@ const Categories: React.FC = () => {
                         className="flex items-center gap-4 border-b pb-4"
                       >
                         <img
-                          src={item.image.includes("?") ? item.image : `${item.image}?w=200&h=150&fit=crop&crop=entropy&auto=format&q=80`}
+                          src={item.image.includes("?") ? item.image : `${item.image}?w=100&h=75&fit=crop&crop=entropy&auto=format&q=80`}
                           alt={item.name}
-                          className="w-20 h-20 object-cover rounded"
+                          className="w-16 h-12 object-cover rounded"
                         />
                         <div className="flex-1">
                           <h3 className="font-medium">{item.name}</h3>

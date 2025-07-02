@@ -5,16 +5,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
-  console.log("Incoming request:", req.method); // ✅ Basic log
+  console.log("Incoming request:", req.method);
 
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
   try {
-    const { name, phone, productName, time, description } = req.body;
+    const { name, phone, productName, price, time, description, image } = req.body;
 
-    if (!name || !phone || !productName || !time) {
+    if (!name || !phone || !productName || !price || !time) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -28,20 +28,21 @@ export default async function handler(
       },
     });
 
-    // Verify transporter configuration
     await transporter.verify();
     console.log("Transporter configured successfully");
 
     const mailOptions = {
-      from: `"Callback" <videosoundevent@gmail.com>`, // Updated to match user
+      from: `"Callback" <videosoundevent@gmail.com>`,
       to: "videosoundevent@gmail.com",
-      subject: `New request: ${productName}`,
+      subject: `New request: ${Array.isArray(productName) ? productName.join(", ") : productName}`,
       text: `
         Name: ${name}
         Phone: ${phone}
-        Product: ${productName}
+        Product(s): ${Array.isArray(productName) ? productName.join(", ") : productName}
+        Price(s): ${Array.isArray(price) ? price.join(", ") : price}
         Time: ${time}
         Description: ${description || "No description"}
+        Image: ${image || "No image"}
       `,
     };
 

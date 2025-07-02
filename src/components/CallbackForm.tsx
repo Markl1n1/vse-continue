@@ -26,14 +26,14 @@ interface CallbackFormProps {
   productId?: string;
   onSuccess?: () => void;
   includeDescription?: boolean;
-  productDetails?: ProductDetails | ProductDetails[];
+  productDetails?: ProductDetails[];
 }
 
 const CallbackForm: React.FC<CallbackFormProps> = ({
   productId,
   onSuccess,
   includeDescription = false,
-  productDetails,
+  productDetails = [],
 }) => {
   const { t, language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,25 +60,20 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
 
-    const payload = Array.isArray(productDetails)
-      ? productDetails.map((item) => ({
-          name: data.name,
-          phone: data.phone,
-          productName: item.name,
-          image: item.image,
-          price: item.price,
-          time: new Date().toLocaleString(),
-        }))
-      : [
-          {
-            name: data.name,
-            phone: data.phone,
-            productName: productDetails?.name || "Unknown",
-            image: productDetails?.image || "",
-            price: productDetails?.price || "N/A",
-            time: new Date().toLocaleString(),
-          },
-        ];
+    const productNames = productDetails.map((item) => item.name).join(", ");
+    const productPrices = productDetails.map((item) => item.price).join(", ");
+
+    const payload = [
+      {
+        name: data.name,
+        phone: data.phone,
+        productName: productNames,
+        image: productDetails.length > 0 ? productDetails[0].image : "",
+        price: productPrices,
+        time: new Date().toLocaleString(),
+        description: data.description || "No description",
+      },
+    ];
 
     try {
       const response = await fetch(
@@ -118,7 +113,7 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     phone: "+380950001111",
     description: {
       ua: "Напишіть, що вас цікавить або деталі заходу",
-      ru: "Напишите, що вас интересует или детали мероприятия",
+      ru: "Напишите, что вас интересует или детали мероприятия",
       en: "Write what are you looking for or event details",
     },
   };
