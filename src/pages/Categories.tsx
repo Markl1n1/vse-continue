@@ -6,7 +6,23 @@ import { getProducts, Product } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import CallbackForm from "@/components/CallbackForm";
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+}
 
 const Categories: React.FC = () => {
   const { t, language } = useLanguage();
@@ -21,8 +37,16 @@ const Categories: React.FC = () => {
     Array<{ id: string; name: string; category: string }>
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
+    // Load cart from localStorage
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+
     setIsLoading(true);
     getProducts()
       .then((data) => {
@@ -43,6 +67,25 @@ const Categories: React.FC = () => {
         setIsLoading(false);
       });
   }, [categoryId]);
+
+  const handleAddToCart = (product: Product) => {
+    const newCartItem = {
+      id: product.id,
+      name: product.name[language],
+      price: product.price,
+      image: product.imageUrl,
+    };
+
+    const updatedCart = [...cart, newCartItem];
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
+
+  const handleRemoveFromCart = (productId: string) => {
+    const updatedCart = cart.filter((item) => item.id !== productId);
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -88,7 +131,6 @@ const Categories: React.FC = () => {
     (product) => product.category === selectedCategory,
   );
 
-  // Dynamic SEO based on selected category
   const pageTitle = selectedCategory
     ? `${t(selectedCategory)} | VideoSoundEvent`
     : "Categories | VideoSoundEvent";
@@ -113,7 +155,7 @@ const Categories: React.FC = () => {
         />
       </Helmet>
 
-      <div className="container py-8">
+      <div className="container py-8 relative">
         <h1 className="text-3xl font-bold mb-4">{t("categories")}</h1>
 
         {isLoading ? (
@@ -193,7 +235,10 @@ const Categories: React.FC = () => {
                                 key={product.id}
                                 className="transition-all duration-300"
                               >
-                                <ProductCard product={product} />
+                                <ProductCard
+                                  product={product}
+                                  onAddToCart={handleAddToCart}
+                                />
                               </div>
                             ))
                           ) : (
@@ -212,6 +257,77 @@ const Categories: React.FC = () => {
             </div>
           </>
         )}
+
+        {/* Cart Button */}
+        <div className="fixed bottom-6 right-6 z-30">
+          <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="relative rounded-full p-3 bg-primary text-primary-foreground shadow-lg hover:bg-primary/90"
+                aria-label="Open cart"
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {cart.length}
+                  </span>
+                )}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{t("cart")}</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-[60vh] overflow-y-auto">
+                {cart.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    {t("cart_empty")}
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {cart.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-4 border-b pb-4"
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-20 h-20 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium">{item.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {item.price} {t("price_per_day")}
+                          </p>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveFromCart(item.id)}
+                        >
+                          {t("remove")}
+                        </Button>
+                      </div>
+                    ))}
+                    <CallbackForm
+                      productDetails={cart.map((item) => ({
+                        name: item.name,
+                        image: item.image,
+                        price: item.price.toString(),
+                      }))}
+                      onSuccess={() => {
+                        setCart([]);
+                        localStorage.removeItem("cart");
+                        setIsCartOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </>
   );

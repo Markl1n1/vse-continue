@@ -16,15 +16,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
+interface ProductDetails {
+  name: string;
+  image: string;
+  price: string;
+}
+
 interface CallbackFormProps {
   productId?: string;
   onSuccess?: () => void;
   includeDescription?: boolean;
-  productDetails?: {
-    name: string;
-    image: string;
-    price: string;
-  };
+  productDetails?: ProductDetails | ProductDetails[];
 }
 
 const CallbackForm: React.FC<CallbackFormProps> = ({
@@ -58,16 +60,25 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
 
-    const payload = [
-      {
-        name: data.name,
-        phone: data.phone,
-        productName: productDetails?.name || "Unknown",
-        image: productDetails?.image || "",
-        price: productDetails?.price || "N/A",
-        time: new Date().toLocaleString(),
-      },
-    ];
+    const payload = Array.isArray(productDetails)
+      ? productDetails.map((item) => ({
+          name: data.name,
+          phone: data.phone,
+          productName: item.name,
+          image: item.image,
+          price: item.price,
+          time: new Date().toLocaleString(),
+        }))
+      : [
+          {
+            name: data.name,
+            phone: data.phone,
+            productName: productDetails?.name || "Unknown",
+            image: productDetails?.image || "",
+            price: productDetails?.price || "N/A",
+            time: new Date().toLocaleString(),
+          },
+        ];
 
     try {
       const response = await fetch(
@@ -107,7 +118,7 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     phone: "+380950001111",
     description: {
       ua: "Напишіть, що вас цікавить або деталі заходу",
-      ru: "Напишите, что вас интересует или детали мероприятия",
+      ru: "Напишите, що вас интересует или детали мероприятия",
       en: "Write what are you looking for or event details",
     },
   };
@@ -153,8 +164,8 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
                   {language === "ua"
                     ? "Опис"
                     : language === "ru"
-                      ? "Описание"
-                      : "Description"}
+                    ? "Описание"
+                    : "Description"}
                 </FormLabel>
                 <FormControl>
                   <Textarea
