@@ -11,14 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Product } from "@/data/products";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Helmet } from "react-helmet-async";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Play } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
   onAddToCart?: (product: Product) => void;
+  onPlayVideo?: (videoUrl: string) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onPlayVideo }) => {
   const { language, t } = useLanguage();
   const [imageError, setImageError] = useState(false);
 
@@ -85,7 +86,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
         <CardContent>
           <p className="line-clamp-3 h-18 text-sm">{productDescription}</p>
         </CardContent>
-        <CardFooter className="pt-2">
+        <CardFooter className="pt-2 flex gap-2">
           <Button
             className="w-full"
             onClick={() => onAddToCart?.(product)}
@@ -93,6 +94,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
             <ShoppingCart className="mr-2 h-4 w-4" />
             {t("add_to_cart")}
           </Button>
+          {product.videoUrl && (
+            <Button
+              className="w-6 h-5 p-0 rounded-full bg-secondary text-secondary-foreground"
+              onClick={() => onPlayVideo?.(product.videoUrl)}
+            >
+              <Play className="h-4 w-4" />
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </article>

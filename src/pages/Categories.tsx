@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -39,9 +39,11 @@ const Categories: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>("");
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Load cart from localStorage
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       setCart(JSON.parse(savedCart));
@@ -75,7 +77,6 @@ const Categories: React.FC = () => {
       price: product.price,
       image: product.imageUrl,
     };
-
     const updatedCart = [...cart, newCartItem];
     setCart(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
@@ -125,6 +126,32 @@ const Categories: React.FC = () => {
         }, 2000);
       }
     }, 100);
+  };
+
+  const handlePlayVideo = (videoUrl: string) => {
+    setCurrentVideoUrl(videoUrl);
+    setIsVideoOpen(true);
+  };
+
+  const handleCloseVideo = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+    setIsVideoOpen(false);
+    setCurrentVideoUrl("");
+  };
+
+  const handleToggleFullscreen = () => {
+    if (videoRef.current) {
+      if (!document.fullscreenElement) {
+        videoRef.current.requestFullscreen().catch((err) => {
+          console.error("Failed to enter fullscreen:", err);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
   };
 
   const filteredProducts = products.filter(
@@ -238,6 +265,7 @@ const Categories: React.FC = () => {
                                 <ProductCard
                                   product={product}
                                   onAddToCart={handleAddToCart}
+                                  onPlayVideo={handlePlayVideo}
                                 />
                               </div>
                             ))
@@ -258,7 +286,6 @@ const Categories: React.FC = () => {
           </>
         )}
 
-        {/* Cart Button */}
         <div className="fixed bottom-6 right-6 z-30">
           <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
             <DialogTrigger asChild>
@@ -291,7 +318,7 @@ const Categories: React.FC = () => {
                         className="flex items-center gap-4 border-b pb-4"
                       >
                         <img
-                          src={item.image}
+                          src={item.image.includes("?") ? item.image : `${item.image}?w=200&h=150&fit=crop&crop=entropy&auto=format&q=80`}
                           alt={item.name}
                           className="w-20 h-20 object-cover rounded"
                         />
@@ -328,6 +355,33 @@ const Categories: React.FC = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {isVideoOpen && currentVideoUrl && (
+          <div className="fixed inset-8 z-50 bg-black bg-opacity-90 flex items-center justify-center">
+            <div className="relative w-[80%] max-w-4xl">
+              <video
+                ref={videoRef}
+                src={currentVideoUrl}
+                controls
+                className="w-full h-auto rounded-lg"
+              >
+                Your browser does not support the video tag.
+              </video>
+              <Button
+                className="absolute top-2 right-2 bg-red-500 text-white"
+                onClick={handleCloseVideo}
+              >
+                Close
+              </Button>
+              <Button
+                className="absolute top-2 left-2 bg-blue-500 text-white"
+                onClick={handleToggleFullscreen}
+              >
+                {document.fullscreenElement ? "Exit Fullscreen" : "Fullscreen"}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

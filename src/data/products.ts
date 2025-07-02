@@ -2,6 +2,7 @@ export interface Product {
   id: string;
   category: string;
   imageUrl: string;
+  videoUrl?: string; // New optional field for video URL
   name: {
     ua: string;
     ru: string;
@@ -33,6 +34,7 @@ export async function getProducts(): Promise<Product[]> {
             id: row.id,
             category: row.category,
             imageUrl: row.imageUrl,
+            videoUrl: row.videoUrl || "",
             name: {
               ua: row.name_ua,
               ru: row.name_ru,
