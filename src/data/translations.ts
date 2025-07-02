@@ -117,6 +117,26 @@ export const translations: Translations = {
     ru: "Загрузка",
     en: "Loading",
   },
+  add_to_cart: {
+    ua: "У Кошик",
+    ru: "В Корзину",
+    en: "To Cart",
+  },
+  cart: {
+    ua: "Кошик",
+    ru: "Корзина",
+    en: "Cart",
+  },
+  cart_empty: {
+    ua: "Ваш кошик порожній",
+    ru: "Ваша корзина пуста",
+    en: "Your cart is empty",
+  },
+  remove: {
+    ua: "Видалити",
+    ru: "Удалить",
+    en: "Remove",
+  },
 
   // Old categories that we'll keep for backward compatibility with existing products
   multimedia_tools: {

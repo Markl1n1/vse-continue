@@ -22,6 +22,7 @@ interface CartItem {
   name: string;
   price: number;
   image: string;
+  quantity: number;
 }
 
 const Categories: React.FC = () => {
@@ -71,20 +72,37 @@ const Categories: React.FC = () => {
   }, [categoryId]);
 
   const handleAddToCart = (product: Product) => {
-    const newCartItem = {
-      id: product.id,
-      name: product.name[language],
-      price: product.price,
-      image: product.imageUrl,
-    };
-    const updatedCart = [...cart, newCartItem];
-    setCart(updatedCart);
+    const existingItem = cart.find((item) => item.id === product.id);
+    if (existingItem) {
+      const updatedCart = cart.map((item) =>
+        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      );
+      setCart(updatedCart);
+    } else {
+      const newCartItem = {
+        id: product.id,
+        name: product.name[language],
+        price: product.price,
+        image: product.imageUrl,
+        quantity: 1,
+      };
+      const updatedCart = [...cart, newCartItem];
+      setCart(updatedCart);
+    }
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const handleRemoveFromCart = (productId: string) => {
-    const updatedCart = cart.filter((item) => item.id !== productId);
-    setCart(updatedCart);
+    const itemToRemove = cart.find((item) => item.id === productId);
+    if (itemToRemove && itemToRemove.quantity > 1) {
+      const updatedCart = cart.map((item) =>
+        item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+      );
+      setCart(updatedCart);
+    } else {
+      const updatedCart = cart.filter((item) => item.id !== productId);
+      setCart(updatedCart);
+    }
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
@@ -296,7 +314,7 @@ const Categories: React.FC = () => {
                 <ShoppingCart className="h-6 w-6" />
                 {cart.length > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {cart.length}
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 )}
               </Button>
@@ -312,31 +330,33 @@ const Categories: React.FC = () => {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {cart.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-4 border-b pb-4"
-                      >
-                        <img
-                          src={item.image.includes("?") ? item.image : `${item.image}?w=100&h=75&fit=crop&crop=entropy&auto=format&q=80`}
-                          alt={item.name}
-                          className="w-16 h-12 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-medium">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {item.price} {t("price_per_day")}
-                          </p>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRemoveFromCart(item.id)}
+                    {cart.map((item) =>
+                      [...Array(item.quantity)].map((_, index) => (
+                        <div
+                          key={`${item.id}-${index}`}
+                          className="flex items-center gap-4 border-b pb-4"
                         >
-                          {t("remove")}
-                        </Button>
-                      </div>
-                    ))}
+                          <img
+                            src={item.image.includes("?") ? item.image : `${item.image}?w=100&h=75&fit=crop&crop=entropy&auto=format&q=80`}
+                            alt={item.name}
+                            className="w-16 h-12 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-medium">{item.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {item.price} {t("price_per_day")}
+                            </p>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveFromCart(item.id)}
+                          >
+                            {t("remove")}
+                          </Button>
+                        </div>
+                      ))
+                    )}
                     <CallbackForm
                       productDetails={cart.map((item) => ({
                         name: item.name,
