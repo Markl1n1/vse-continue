@@ -26,5 +26,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "api/submit.ts"]
+  "include": ["src", "api/submit.ts", "api/send-email.ts"]
 }

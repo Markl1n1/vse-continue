@@ -57,54 +57,81 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
+const onSubmit = async (data: FormValues) => {
+  setIsSubmitting(true);
 
-    const productNames = productDetails.map((item) => item.name).join(", ");
-    const productPrices = productDetails.map((item) => item.price).join(", ");
+  const productNames = productDetails.map((item) => item.name).join(", ");
+  const productPrices = productDetails.map((item) => item.price).join(", ");
 
-    const payload = [
-      {
-        order_id: `order_${Date.now()}`,
-        name: data.name,
-        phone: data.phone,
-        product_names: productNames,
-        prices: productPrices,
-        time: new Date().toISOString(),
-        description: data.description || "No description",
-        image: productDetails.length > 0 ? productDetails[0].image : "",
-        created_at: new Date().toISOString(),
-      },
-    ];
-
-    try {
-      console.log("Calling /api/submit with payload:", payload);
-      const response = await fetch("/api/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Proxy response status:", response.status);
-      console.log("Proxy response text:", await response.text());
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP error! Status: ${response.status}`);
-      }
-
-      toast.success(t("callback_success"));
-      form.reset();
-      onSuccess?.();
-    } catch (error: any) {
-      console.error("Error submitting form:", error.message);
-      toast.error(`Submission error: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const payload = {
+    order_id: `order_${Date.now()}`,
+    name: data.name,
+    phone: data.phone,
+    product_names: productNames,
+    prices: productPrices,
+    description: data.description || "No description",
+    image: productDetails.length > 0 ? productDetails[0].image : "",
+    created_at: new Date().toISOString(),
   };
+
+  try {
+    // Submit to Google Sheet via /api/submit
+    console.log("Calling /api/submit with payload:", payload);
+    const sheetResponse = await fetch("/api/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([payload]), // Google Apps Script expects an array
+    });
+
+    console.log("Proxy response status:", sheetResponse.status);
+    const sheetResult = await sheetResponse.json();
+
+    if (!sheetResponse.ok) {
+      throw new Error(
+        sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`
+      );
+    }
+
+    // Call /api/send-email with adjusted payload
+    const emailPayload = {
+      name: data.name,
+      phone: data.phone,
+      productName: productNames,
+      price: productPrices,
+      time: payload.created_at,
+      description: data.description || "No description",
+      image: productDetails.length > 0 ? productDetails[0].image : "",
+    };
+
+    console.log("Calling /api/send-email with payload:", emailPayload);
+    const emailResponse = await fetch("/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailPayload),
+    });
+
+    const emailResult = await emailResponse.json();
+
+    if (!emailResponse.ok) {
+      throw new Error(
+        emailResult.message || `HTTP error! Status: ${emailResponse.status}`
+      );
+    }
+
+    toast.success(t("callback_success"));
+    form.reset();
+    onSuccess?.();
+  } catch (error: any) {
+    console.error("Error submitting form:", error.message);
+    toast.error(`Submission error: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const placeholders = {
     name: {
