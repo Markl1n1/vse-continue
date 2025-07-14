@@ -77,7 +77,7 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
 
     try {
       const response = await fetch(
-        "https://v1.nocodeapi.com/mark123/google_sheets/ZmTkuJzUXyuamHUA/addRows?tabId=List",
+        "https://v1.nocodeapi.com/mark123/google_sheets/ZmTkuJzUXyuamHUA?tabId=List",
         {
           method: "POST",
           headers: {
