@@ -14,8 +14,7 @@ export default async function handler(
 
   try {
     // Validate payload
-    const { name, phone, productName, price, time, description, image } =
-      req.body;
+    const { name, phone, productName, price, time, image } = req.body;
 
     if (!name || !phone || !productName || !price || !time) {
       console.error("Missing required fields:", {
@@ -72,7 +71,7 @@ export default async function handler(
         attachments.push({
           filename: "product-image.jpg",
           content: imageBuffer,
-          cid: "product@image", // Unique Content-ID for embedding
+          cid: "product@image",
         });
 
         imageHtml = `<p><img src="cid:product@image" alt="Product Image" style="max-width: 100%; height: auto;" /></p>`;
@@ -95,7 +94,6 @@ export default async function handler(
         }
         Price(s): ${Array.isArray(price) ? price.join(", ") : price}
         Time: ${time}
-        Description: ${description || "No description"}
         Image: ${image || "No image"}
       `,
       html: `
@@ -109,7 +107,6 @@ export default async function handler(
           Array.isArray(price) ? price.join(", ") : price
         }</p>
         <p><strong>Time:</strong> ${time}</p>
-        <p><strong>Description:</strong> ${description || "No description"}</p>
         ${imageHtml}
       `,
       attachments,

@@ -12,28 +12,27 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
-interface ProductDetails {
+interface CartItem {
+  id: string;
   name: string;
+  price: number;
   image: string;
-  price: string;
+  quantity: number;
 }
 
 interface CallbackFormProps {
   productId?: string;
   onSuccess?: () => void;
-  includeDescription?: boolean;
-  productDetails?: ProductDetails[];
+  cart?: CartItem[];
 }
 
 const CallbackForm: React.FC<CallbackFormProps> = ({
   productId,
   onSuccess,
-  includeDescription = false,
-  productDetails = [],
+  cart = [],
 }) => {
   const { t, language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,9 +40,6 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
   const formSchema = z.object({
     name: z.string().min(2, { message: "Name is required" }),
     phone: z.string().min(5, { message: "Valid phone number required" }),
-    description: includeDescription
-      ? z.string().optional()
-      : z.string().optional().default(""),
   });
 
   type FormValues = z.infer<typeof formSchema>;
@@ -53,87 +49,107 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     defaultValues: {
       name: "",
       phone: "",
-      description: "",
     },
   });
 
-const onSubmit = async (data: FormValues) => {
-  setIsSubmitting(true);
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
 
-  const productNames = productDetails.map((item) => item.name).join(", ");
-  const productPrices = productDetails.map((item) => item.price).join(", ");
+    // Aggregate cart items by name, summing quantities and prices
+    const productMap = cart.reduce((acc, item) => {
+      const existing = acc[item.name] || { count: 0, totalPrice: 0, image: item.image };
+      return {
+        ...acc,
+        [item.name]: {
+          count: existing.count + item.quantity,
+          totalPrice: existing.totalPrice + item.price * item.quantity,
+          image: item.image,
+        },
+      };
+    }, {} as Record<string, { count: number; totalPrice: number; image: string }>);
 
-  const payload = {
-    order_id: `order_${Date.now()}`,
-    name: data.name,
-    phone: data.phone,
-    product_names: productNames,
-    prices: productPrices,
-    description: data.description || "No description",
-    image: productDetails.length > 0 ? productDetails[0].image : "",
-    created_at: new Date().toISOString(),
-  };
+    // Format product names as "<count> x <name>" and collect total prices
+    const productNames = Object.entries(productMap)
+      .map(([name, { count }]) => (count > 1 ? `${count} x ${name}` : name))
+      .join(", ");
+    const productPrices = Object.values(productMap)
+      .map(({ totalPrice }) => totalPrice.toFixed(2))
+      .join(", ");
 
-  try {
-    // Submit to Google Sheet via /api/submit
-    console.log("Calling /api/submit with payload:", payload);
-    const sheetResponse = await fetch("/api/submit", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([payload]), // Google Apps Script expects an array
-    });
+    // Generate 7-digit order_id starting from 10001001
+    const baseOrderId = 10001001;
+    const timestampOffset = Math.floor(Date.now() / 1000) % 100000; // Use last 5 digits of timestamp
+    const orderId = (baseOrderId + timestampOffset).toString().padStart(7, "0");
 
-    console.log("Google Sheet response status:", sheetResponse.status);
-    const sheetResult = await sheetResponse.json();
-
-    if (!sheetResponse.ok) {
-      console.error("Google Sheet submission failed:", sheetResult);
-      throw new Error(
-        sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`,
-      );
-    }
-
-    // Call /api/send-email with adjusted payload
-    const emailPayload = {
+    const payload = {
+      order_id: orderId,
       name: data.name,
       phone: data.phone,
-      productName: productNames,
-      price: productPrices,
-      time: payload.created_at,
-      description: data.description || "No description",
-      image: productDetails.length > 0 ? productDetails[0].image : "",
+      product_names: productNames || "No products",
+      prices: productPrices || "0.00",
+      image: cart.length > 0 ? cart[0].image : "",
+      created_at: new Date().toISOString(),
     };
 
-    console.log("Calling /api/send-email with payload:", emailPayload);
-    const emailResponse = await fetch("/api/send-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    try {
+      // Submit to Google Sheet via /api/submit
+      console.log("Calling /api/submit with payload:", payload);
+      const sheetResponse = await fetch("/api/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([payload]),
+      });
 
-    const emailResult = await emailResponse.json();
+      console.log("Google Sheet response status:", sheetResponse.status);
+      const sheetResult = await sheetResponse.json();
 
-    if (!emailResponse.ok) {
-      console.error("Email submission failed:", emailResult);
-      throw new Error(
-        emailResult.message || `HTTP error! Status: ${emailResponse.status}`,
-      );
+      if (!sheetResponse.ok) {
+        console.error("Google Sheet submission failed:", sheetResult);
+        throw new Error(
+          sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`,
+        );
+      }
+
+      // Call /api/send-email with adjusted payload
+      const emailPayload = {
+        name: data.name,
+        phone: data.phone,
+        productName: productNames || "No products",
+        price: productPrices || "0.00",
+        time: payload.created_at,
+        image: cart.length > 0 ? cart[0].image : "",
+      };
+
+      console.log("Calling /api/send-email with payload:", emailPayload);
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailPayload),
+      });
+
+      const emailResult = await emailResponse.json();
+
+      if (!emailResponse.ok) {
+        console.error("Email submission failed:", emailResult);
+        throw new Error(
+          emailResult.message || `HTTP error! Status: ${emailResponse.status}`,
+        );
+      }
+
+      toast.success(t("callback_success"));
+      form.reset();
+      onSuccess?.();
+    } catch (error: any) {
+      console.error("Error submitting form:", error.message, error.stack);
+      toast.error(`Submission error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success(t("callback_success"));
-    form.reset();
-    onSuccess?.();
-  } catch (error: any) {
-    console.error("Error submitting form:", error.message, error.stack);
-    toast.error(`Submission error: ${error.message}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const placeholders = {
     name: {
@@ -142,11 +158,6 @@ const onSubmit = async (data: FormValues) => {
       en: "Name",
     },
     phone: "+380950001111",
-    description: {
-      ua: "Напишіть, що вас цікавить або деталі заходу",
-      ru: "Напишите, что вас интересует или детали мероприятия",
-      en: "Write what are you looking for or event details",
-    },
   };
 
   return (
@@ -179,32 +190,6 @@ const onSubmit = async (data: FormValues) => {
             </FormItem>
           )}
         />
-
-        {includeDescription && (
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {language === "ua"
-                    ? "Опис"
-                    : language === "ru"
-                    ? "Описание"
-                    : "Description"}
-                </FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder={placeholders.description[language]}
-                    className="min-h-[120px] resize-y"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? (

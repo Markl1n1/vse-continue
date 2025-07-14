@@ -39,6 +39,51 @@ const Categories: React.FC = () => {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIs Stuart
+System: **Updated `Categories.tsx`**
+
+<xaiArtifact artifact_id="df814628-1034-4806-878a-9403cf5518b9" artifact_version_id="5d6a7143-9c86-48db-a8ee-238f3cbc0f9d" title="Categories.tsx" contentType="text/typescript">
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getProducts, Product } from "@/data/products";
+import ProductCard from "@/components/ProductCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Search, ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import CallbackForm from "@/components/CallbackForm";
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+}
+
+const Categories: React.FC = () => {
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
+  const { categoryId } = useParams<{ categoryId?: string }>();
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<
+    Array<{ id: string; name: string; category: string }>
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>("");
@@ -73,36 +118,38 @@ const Categories: React.FC = () => {
 
   const handleAddToCart = (product: Product) => {
     const existingItem = cart.find((item) => item.id === product.id);
+    let updatedCart: CartItem[];
     if (existingItem) {
-      const updatedCart = cart.map((item) =>
+      updatedCart = cart.map((item) =>
         item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
       );
-      setCart(updatedCart);
     } else {
-      const newCartItem = {
-        id: product.id,
-        name: product.name[language],
-        price: product.price,
-        image: product.imageUrl,
-        quantity: 1,
-      };
-      const updatedCart = [...cart, newCartItem];
-      setCart(updatedCart);
+      updatedCart = [
+        ...cart,
+        {
+          id: product.id,
+          name: product.name[language],
+          price: product.price,
+          image: product.imageUrl,
+          quantity: 1,
+        },
+      ];
     }
+    setCart(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const handleRemoveFromCart = (productId: string) => {
     const itemToRemove = cart.find((item) => item.id === productId);
+    let updatedCart: CartItem[];
     if (itemToRemove && itemToRemove.quantity > 1) {
-      const updatedCart = cart.map((item) =>
+      updatedCart = cart.map((item) =>
         item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
       );
-      setCart(updatedCart);
     } else {
-      const updatedCart = cart.filter((item) => item.id !== productId);
-      setCart(updatedCart);
+      updatedCart = cart.filter((item) => item.id !== productId);
     }
+    setCart(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
@@ -330,39 +377,33 @@ const Categories: React.FC = () => {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {cart.map((item) =>
-                      [...Array(item.quantity)].map((_, index) => (
-                        <div
-                          key={`${item.id}-${index}`}
-                          className="flex items-center gap-4 border-b pb-4"
-                        >
-                          <img
-                            src={item.image.includes("?") ? item.image : `${item.image}?w=100&h=75&fit=crop&crop=entropy&auto=format&q=80`}
-                            alt={item.name}
-                            className="w-16 h-12 object-cover rounded"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-medium">{item.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {item.price} {t("price_per_day")}
-                            </p>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRemoveFromCart(item.id)}
-                          >
-                            {t("remove")}
-                          </Button>
+                    {cart.map((item) => (
+                      <div
+                        key={`${item.id}-${item.quantity}`}
+                        className="flex items-center gap-4 border-b pb-4"
+                      >
+                        <img
+                          src={item.image.includes("?") ? item.image : `${item.image}?w=100&h=75&fit=crop&crop=entropy&auto=format&q=80`}
+                          alt={item.name}
+                          className="w-16 h-12 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium">{item.quantity > 1 ? `${item.quantity} x ${item.name}` : item.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {item.price * item.quantity} {t("price_per_day")}
+                          </p>
                         </div>
-                      ))
-                    )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveFromCart(item.id)}
+                        >
+                          {t("remove")}
+                        </Button>
+                      </div>
+                    ))}
                     <CallbackForm
-                      productDetails={cart.map((item) => ({
-                        name: item.name,
-                        image: item.image,
-                        price: item.price.toString(),
-                      }))}
+                      cart={cart} // Pass the cart directly
                       onSuccess={() => {
                         setCart([]);
                         localStorage.removeItem("cart");
