@@ -28,14 +28,18 @@ export default async function handler(
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Configure nodemailer transport
+    // Configure nodemailer transport with fallback to hardcoded values
+    const smtpUser = process.env.SMTP_USER || "mark.lindt.crm@gmail.com";
+    const smtpPass = process.env.SMTP_PASS || "efnk zbyn soda uotw";
+    const smtpTo = process.env.SMTP_TO || "mark.lindt.crm@gmail.com";
+
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
@@ -80,8 +84,8 @@ export default async function handler(
 
     // Prepare email content
     const mailOptions = {
-      from: `"Callback" <${process.env.SMTP_USER}>`,
-      to: process.env.SMTP_TO || process.env.SMTP_USER,
+      from: `"Callback" <${smtpUser}>`,
+      to: smtpTo,
       subject: `Order: ${name}`,
       text: `
         Name: ${name}
