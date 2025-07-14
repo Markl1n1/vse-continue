@@ -97,7 +97,6 @@ export default async function handler(
         Image: ${image || "No image"}
       `,
       html: `
-        <h2>Order Details</h2>
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Product(s):</strong> ${
