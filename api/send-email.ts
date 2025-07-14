@@ -81,11 +81,14 @@ export default async function handler(
       }
     }
 
+      // Calculate total price
+    const pricesArray = Array.isArray(price) ? price : price.split(", ").map(Number);
+    const totalPrice = pricesArray.reduce((sum, p) => sum + (isNaN(p) ? 0 : p), 0).toFixed(2);
     // Prepare email content
     const mailOptions = {
       from: `"Callback" <${smtpUser}>`,
       to: smtpTo,
-      subject: `Order: ${name}`,
+      subject: `Замовлення: ${name}`,
       text: `
         Name: ${name}
         Phone: ${phone}
@@ -95,17 +98,19 @@ export default async function handler(
         Price(s): ${Array.isArray(price) ? price.join(", ") : price}
         Time: ${time}
         Image: ${image || "No image"}
+        Total Amount: ${totalPrice}
       `,
       html: `
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Product(s):</strong> ${
+        <p><strong>Ім'я:</strong> ${name}</p>
+        <p><strong>Телефон:</strong> ${phone}</p>
+        <p><strong>Замовлено:</strong> ${
           Array.isArray(productName) ? productName.join(", ") : productName
         }</p>
-        <p><strong>Price(s):</strong> ${
+        <p><strong>Сума:</strong> ${
           Array.isArray(price) ? price.join(", ") : price
         }</p>
-        <p><strong>Time:</strong> ${time}</p>
+        <p><strong>Загальна сума:</strong> ${totalPrice}</p>
+        <p><strong>Час замовлення:</strong> ${time}</p>
         ${imageHtml}
       `,
       attachments,
