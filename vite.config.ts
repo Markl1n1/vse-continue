@@ -8,12 +8,12 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     fs: {
-      allow: ['src/pages/api'], // Allow serving API files from /src/pages/api/
+      allow: ['src/pages/api'], // Allow serving API files
     },
   },
   plugins: [
     react({
-      jsxRuntime: "automatic", // ✅ this will now be valid
+      jsxRuntime: "automatic",
     }),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
