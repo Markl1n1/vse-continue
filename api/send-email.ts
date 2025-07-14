@@ -75,7 +75,7 @@ export default async function handler(
     const mailOptions = {
       from: `"Callback" <${smtpUser}>`,
       to: smtpTo,
-      subject: isContactMode ? `Callback Request: ${name}` : `Замовлення: ${name}`,
+      subject: isContactMode ? `Зворотній Зв'язок: ${name}` : `Замовлення: ${name}`,
       text: isContactMode
         ? `Callback was requested\nName: ${name}\nPhone: ${phone}`
         : `
@@ -89,8 +89,6 @@ export default async function handler(
         `,
       html: isContactMode
         ? `
-          <h2>Callback Request</h2>
-          <p><strong>Callback was requested</strong></p>
           <p><strong>Name:</strong> ${name}</p>
           <p><strong>Phone:</strong> ${phone}</p>
         `
