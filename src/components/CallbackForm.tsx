@@ -85,12 +85,13 @@ const onSubmit = async (data: FormValues) => {
       body: JSON.stringify([payload]), // Google Apps Script expects an array
     });
 
-    console.log("Proxy response status:", sheetResponse.status);
+    console.log("Google Sheet response status:", sheetResponse.status);
     const sheetResult = await sheetResponse.json();
 
     if (!sheetResponse.ok) {
+      console.error("Google Sheet submission failed:", sheetResult);
       throw new Error(
-        sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`
+        sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`,
       );
     }
 
@@ -117,8 +118,9 @@ const onSubmit = async (data: FormValues) => {
     const emailResult = await emailResponse.json();
 
     if (!emailResponse.ok) {
+      console.error("Email submission failed:", emailResult);
       throw new Error(
-        emailResult.message || `HTTP error! Status: ${emailResponse.status}`
+        emailResult.message || `HTTP error! Status: ${emailResponse.status}`,
       );
     }
 
@@ -126,7 +128,7 @@ const onSubmit = async (data: FormValues) => {
     form.reset();
     onSuccess?.();
   } catch (error: any) {
-    console.error("Error submitting form:", error.message);
+    console.error("Error submitting form:", error.message, error.stack);
     toast.error(`Submission error: ${error.message}`);
   } finally {
     setIsSubmitting(false);
