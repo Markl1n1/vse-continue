@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    fs: {
+      allow: ['src/pages/api'], // Allow serving API files from /src/pages/api/
+    },
   },
   plugins: [
     react({
