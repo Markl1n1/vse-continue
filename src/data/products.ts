@@ -17,7 +17,7 @@ export interface Product {
 }
 
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRsytl83rbmkbI7k4J8gVzxych7zTg3zAEHcMLSY62x1jcF1s1tsLc2LNd2q4pRCUaNJhIgs__A-0P8/pub?gid=0&single=true&output=csv";
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCCJj9IruVw-6LycyFnWJkgT_0jypzeSgG42YH-JsMCs2CM0z0n_DMGXu1HyEi-ZYowyDVUOcTk3NU/pub?gid=0&single=true&output=csv";
 
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(SHEET_URL);

@@ -23,8 +23,8 @@ export default async function handler(
       port: 465,
       secure: true,
       auth: {
-        user: "videosoundevent@gmail.com",
-        pass: "auax ldqj nyts yeqw",
+        user: "mark.lindt.crm@gmail.com",
+        pass: "efnk zbyn soda uotw",
       },
     });
 
@@ -32,8 +32,8 @@ export default async function handler(
     console.log("Transporter configured successfully");
 
     const mailOptions = {
-      from: `"Callback" <videosoundevent@gmail.com>`,
-      to: "videosoundevent@gmail.com",
+      from: `"Callback" <mark.lindt.crm@gmail.com>`,
+      to: "mark.lindt.crm@gmail.com",
       subject: `New request: ${Array.isArray(productName) ? productName.join(", ") : productName}`,
       text: `
         Name: ${name}
