@@ -96,7 +96,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onPlayV
           </Button>
           {product.videoUrl && (
             <Button
-              className="w-6 h-5 p-0 rounded-full bg-secondary text-secondary-foreground"
+              className="w-10 h-10 rounded-full bg-secondary text-secondary-foreground"
               onClick={() => onPlayVideo?.(product.videoUrl)}
             >
               <Play className="h-4 w-4" />

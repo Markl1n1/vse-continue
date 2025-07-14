@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getProducts, Product } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import CallbackForm from "@/components/CallbackForm";
+import { useProductData } from "@/hooks/useProductData";
 
 interface CartItem {
   id: string;
@@ -25,19 +25,27 @@ interface CartItem {
   quantity: number;
 }
 
+interface Product {
+  id: string;
+  name: Record<string, string>;
+  description: Record<string, string>;
+  category: string;
+  price: number;
+  imageUrl: string;
+  videoUrl?: string;
+}
+
 const Categories: React.FC = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { categoryId } = useParams<{ categoryId?: string }>();
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const { products, categories, loading } = useProductData();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<
     Array<{ id: string; name: string; category: string }>
   >([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
@@ -50,26 +58,12 @@ const Categories: React.FC = () => {
       setCart(JSON.parse(savedCart));
     }
 
-    setIsLoading(true);
-    getProducts()
-      .then((data) => {
-        setProducts(data);
-        const uniqueCategories = [...new Set(data.map((p) => p.category))];
-        setCategories(uniqueCategories);
-
-        if (categoryId && uniqueCategories.includes(categoryId)) {
-          setSelectedCategory(categoryId);
-        } else {
-          setSelectedCategory(uniqueCategories[0] || "");
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to fetch products:", error);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [categoryId]);
+    if (categoryId && categories.includes(categoryId)) {
+      setSelectedCategory(categoryId);
+    } else {
+      setSelectedCategory(categories[0] || "");
+    }
+  }, [categoryId, categories]);
 
   const handleAddToCart = (product: Product) => {
     const existingItem = cart.find((item) => item.id === product.id);
@@ -205,7 +199,7 @@ const Categories: React.FC = () => {
       <div className="container py-8 relative">
         <h1 className="text-3xl font-bold mb-4">{t("categories")}</h1>
 
-        {isLoading ? (
+        {loading ? (
           <div className="text-center py-12">
             <p className="text-lg text-muted-foreground">{t("loading")}</p>
           </div>
