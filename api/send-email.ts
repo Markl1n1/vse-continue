@@ -17,7 +17,13 @@ export default async function handler(
       req.body;
 
     if (!name || !phone || !productName || !price || !time) {
-      console.error("Missing required fields:", { name, phone, productName, price, time });
+      console.error("Missing required fields:", {
+        name,
+        phone,
+        productName,
+        price,
+        time,
+      });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -46,8 +52,8 @@ export default async function handler(
 
     // Prepare email content
     const mailOptions = {
-      from: `"Callback" <${process.env.SMTP_USER || "mark.lindt.crm@gmail.com"}>`,
-      to: process.env.SMTP_TO || "mark.lindt.crm@gmail.com",
+      from: `"Callback" <${process.env.SMTP_USER}>`,
+      to: process.env.SMTP_TO || process.env.SMTP_USER,
       subject: `New request: ${
         Array.isArray(productName) ? productName.join(", ") : productName
       }`,
