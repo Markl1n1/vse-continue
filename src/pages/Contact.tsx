@@ -64,46 +64,6 @@ const Contact: React.FC = () => {
     },
   };
 
-  useEffect(() => {
-    if (window.google) {
-      initMap();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY`;
-    script.async = true;
-    script.defer = true;
-
-    script.onload = initMap;
-    script.onerror = () => {
-      console.error("Failed to load Google Maps");
-      setMapError("Unable to load the map. Please try again later.");
-    };
-
-    document.head.appendChild(script);
-  }, []);
-
-  const initMap = () => {
-    if (!mapContainer.current) return;
-
-    try {
-      const map = new window.google.maps.Map(mapContainer.current, {
-        center: { lat: 50.432573, lng: 30.615517 },
-        zoom: 12,
-      });
-
-      new window.google.maps.Marker({
-        position: { lat: 50.432573, lng: 30.615517 },
-        map,
-        title: "VideoSoundEvent",
-      });
-    } catch (error) {
-      console.error("Map init error:", error);
-      setMapError("Unable to load the map. Please try again later.");
-    }
-  };
-
   return (
     <>
       <Helmet>
@@ -183,7 +143,7 @@ const Contact: React.FC = () => {
               <p className="mb-6 text-muted-foreground">
                 {contactInfo.form_subtitle[language]}
               </p>
-              <CallbackForm includeDescription={true} />
+              <CallbackForm />
             </CardContent>
           </Card>
         </div>
@@ -194,16 +154,16 @@ const Contact: React.FC = () => {
               <CardTitle>{contactInfo.map_title[language]}</CardTitle>
             </CardHeader>
             <CardContent>
-              {mapError ? (
-                <div className="w-full h-[400px] flex items-center justify-center bg-gray-100 rounded-md">
-                  <p className="text-red-500">{mapError}</p>
-                </div>
-              ) : (
-                <div
-                  ref={mapContainer}
-                  className="w-full h-[400px] rounded-md"
-                />
-              )}
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d9301.085007420337!2d18.690364710190533!3d54.352187588995555!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2spl!4v1752504966631!5m2!1sen!2spl"
+                width="100%"
+                height="450"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="VideoSoundEvent Location"
+              />
             </CardContent>
           </Card>
         </div>

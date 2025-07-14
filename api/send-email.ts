@@ -13,21 +13,13 @@ export default async function handler(
   }
 
   try {
-    // Validate payload
     const { name, phone, productName, price, time, image } = req.body;
 
-    if (!name || !phone || !productName || !price || !time) {
-      console.error("Missing required fields:", {
-        name,
-        phone,
-        productName,
-        price,
-        time,
-      });
+    if (!name || !phone) {
+      console.error("Missing required fields:", { name, phone });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Configure nodemailer transport with fallback to hardcoded values
     const smtpUser = process.env.SMTP_USER || "mark.lindt.crm@gmail.com";
     const smtpPass = process.env.SMTP_PASS || "efnk zbyn soda uotw";
     const smtpTo = process.env.SMTP_TO || "mark.lindt.crm@gmail.com";
@@ -42,7 +34,6 @@ export default async function handler(
       },
     });
 
-    // Verify SMTP connection
     try {
       await transporter.verify();
       console.log("SMTP transporter verified successfully");
@@ -54,11 +45,9 @@ export default async function handler(
       });
     }
 
-    // Prepare email attachments and content
     const attachments = [];
-    let imageHtml = image ? `<p>Image: <a href="${image}">${image}</a></p>` : "<p>Image: No image</p>";
+    let imageHtml = image ? `<p>Image: <a href="${image}">${image}</a></p>` : "";
 
-    // Fetch and attach image if provided
     if (image) {
       try {
         const imageResponse = await fetch(image);
@@ -81,42 +70,43 @@ export default async function handler(
       }
     }
 
-      // Calculate total price
-    const pricesArray = Array.isArray(price) ? price : price.split(", ").map(Number);
-    const totalPrice = pricesArray.reduce((sum, p) => sum + (isNaN(p) ? 0 : p), 0).toFixed(2);
-    // Prepare email content
+    const isContactMode = !productName && !price && !time && !image;
+
     const mailOptions = {
       from: `"Callback" <${smtpUser}>`,
       to: smtpTo,
-      subject: `Замовлення: ${name}`,
-      text: `
-        Name: ${name}
-        Phone: ${phone}
-        Product(s): ${
-          Array.isArray(productName) ? productName.join(", ") : productName
-        }
-        Price(s): ${Array.isArray(price) ? price.join(", ") : price}
-        Time: ${time}
-        Image: ${image || "No image"}
-        Total Amount: ${totalPrice}
-      `,
-      html: `
-        <p><strong>Ім'я:</strong> ${name}</p>
-        <p><strong>Телефон:</strong> ${phone}</p>
-        <p><strong>Замовлено:</strong> ${
-          Array.isArray(productName) ? productName.join(", ") : productName
-        }</p>
-        <p><strong>Сума:</strong> ${
-          Array.isArray(price) ? price.join(", ") : price
-        }</p>
-        <p><strong>Загальна сума:</strong> ${totalPrice}</p>
-        <p><strong>Час замовлення:</strong> ${time}</p>
-        ${imageHtml}
-      `,
+      subject: isContactMode ? `Callback Request: ${name}` : `Замовлення: ${name}`,
+      text: isContactMode
+        ? `Callback was requested\nName: ${name}\nPhone: ${phone}`
+        : `
+          Name: ${name}
+          Phone: ${phone}
+          Product(s): ${Array.isArray(productName) ? productName.join(", ") : productName}
+          Price(s): ${Array.isArray(price) ? price.join(", ") : price}
+          Time: ${time}
+          Image: ${image || "No image"}
+          Total Amount: ${Array.isArray(price) ? price.reduce((sum, p) => sum + (isNaN(p) ? 0 : p), 0).toFixed(2) : price}
+        `,
+      html: isContactMode
+        ? `
+          <h2>Callback Request</h2>
+          <p><strong>Callback was requested</strong></p>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+        `
+        : `
+          <h2>Order Details</h2>
+          <p><strong>Ім'я:</strong> ${name}</p>
+          <p><strong>Телефон:</strong> ${phone}</p>
+          <p><strong>Замовлено:</strong> ${Array.isArray(productName) ? productName.join(", ") : productName}</p>
+          <p><strong>Сума:</strong> ${Array.isArray(price) ? price.join(", ") : price}</p>
+          <p><strong>Загальна сума:</strong> ${Array.isArray(price) ? price.reduce((sum, p) => sum + (isNaN(p) ? 0 : p), 0).toFixed(2) : price}</p>
+          <p><strong>Час замовлення:</strong> ${time}</p>
+          ${imageHtml}
+        `,
       attachments,
     };
 
-    // Send email
     await transporter.sendMail(mailOptions);
     console.log("Email sent successfully");
 

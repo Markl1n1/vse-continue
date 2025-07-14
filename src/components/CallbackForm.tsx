@@ -55,39 +55,48 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
 
-    // Aggregate cart items by name, summing quantities and prices
-    const productMap = cart.reduce((acc, item) => {
-      const existing = acc[item.name] || { count: 0, totalPrice: 0, image: item.image };
-      return {
-        ...acc,
-        [item.name]: {
-          count: existing.count + item.quantity,
-          totalPrice: existing.totalPrice + item.price * item.quantity,
-          image: item.image,
-        },
-      };
-    }, {} as Record<string, { count: number; totalPrice: number; image: string }>);
+    // Determine if this is a contact request (no cart or empty cart)
+    const isContactMode = !cart || cart.length === 0;
 
-    // Format product names as "<count> x <name>" and collect total prices
-    const productNames = Object.entries(productMap)
-      .map(([name, { count }]) => (count > 1 ? `${count} x ${name}` : name))
-      .join(", ");
-    const productPrices = Object.values(productMap)
-      .map(({ totalPrice }) => totalPrice.toFixed(2))
-      .join(", ");
-
-    // Generate 7-digit order_id starting from 10001001
-    const baseOrderId = 10001001;
-    const timestampOffset = Math.floor(Date.now() / 1000) % 100000; // Use last 5 digits of timestamp
-    const orderId = (baseOrderId + timestampOffset).toString().padStart(7, "0");
-
+    // Payload construction
     const payload = {
-      order_id: orderId,
+      order_id: isContactMode
+        ? `1000100${Math.floor(Date.now() / 1000) % 10000}`.padStart(7, "0") // Simple 7-digit ID for contact
+        : `1000100${Math.floor(Date.now() / 1000) % 10000}`.padStart(7, "0"), // Same logic for orders
       name: data.name,
       phone: data.phone,
-      product_names: productNames || "No products",
-      prices: productPrices || "0.00",
-      image: cart.length > 0 ? cart[0].image : "",
+      ...(isContactMode
+        ? {}
+        : {
+            product_names: Object.entries(
+              cart.reduce((acc, item) => {
+                const existing = acc[item.name] || { count: 0, image: item.image };
+                return {
+                  ...acc,
+                  [item.name]: {
+                    count: existing.count + item.quantity,
+                    image: item.image,
+                  },
+                };
+              }, {} as Record<string, { count: number; image: string }>)
+            )
+              .map(([name, { count }]) => (count > 1 ? `${count} x ${name}` : name))
+              .join(", ") || "No products",
+            prices: Object.values(
+              cart.reduce((acc, item) => {
+                const existing = acc[item.name] || { totalPrice: 0 };
+                return {
+                  ...acc,
+                  [item.name]: {
+                    totalPrice: existing.totalPrice + item.price * item.quantity,
+                  },
+                };
+              }, {} as Record<string, { totalPrice: number }>)
+            )
+              .map(({ totalPrice }) => totalPrice.toFixed(2))
+              .join(", ") || "0.00",
+            image: cart.length > 0 ? cart[0].image : "",
+          }),
       created_at: new Date().toISOString(),
     };
 
@@ -116,10 +125,14 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
       const emailPayload = {
         name: data.name,
         phone: data.phone,
-        productName: productNames || "No products",
-        price: productPrices || "0.00",
-        time: payload.created_at,
-        image: cart.length > 0 ? cart[0].image : "",
+        ...(isContactMode
+          ? {}
+          : {
+              productName: payload.product_names,
+              price: payload.prices,
+              time: payload.created_at,
+              image: payload.image,
+            }),
       };
 
       console.log("Calling /api/send-email with payload:", emailPayload);
