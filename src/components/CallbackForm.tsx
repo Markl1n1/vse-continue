@@ -65,32 +65,34 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
 
     const payload = [
       {
+        order_id: `order_${Date.now()}`,
         name: data.name,
         phone: data.phone,
-        productName: productNames,
-        image: productDetails.length > 0 ? productDetails[0].image : "",
-        price: productPrices,
-        time: new Date().toLocaleString(),
+        product_names: productNames,
+        prices: productPrices,
+        time: new Date().toISOString(),
         description: data.description || "No description",
+        image: productDetails.length > 0 ? productDetails[0].image : "",
+        created_at: new Date().toISOString(),
       },
     ];
 
     try {
       const response = await fetch(
-        "https://v1.nocodeapi.com/mark123/google_sheets/ZmTkuJzUXyuamHUA?tabId=List",
+        "https://script.google.com/macros/s/AKfycbwZMxEr1PDsq57uhhgfx5yo_vO-ECniO7evp1v3eRS_Klyb6kCakD5dxrd0OGkIkArBJQ/exec", // Replace with your Web App URL
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Unknown error");
+        throw new Error(result.message || "Failed to submit form");
       }
 
       toast.success(t("callback_success"));
@@ -98,7 +100,7 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
       onSuccess?.();
     } catch (error: any) {
       console.error("Error submitting form:", error.message);
-      toast.error("Submission error: " + error.message);
+      toast.error(`Submission error: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }

@@ -17,7 +17,7 @@ const LayoutContent: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-grow">{children}</main>
       <footer className="bg-gray-50 py-6 text-center text-sm text-muted-foreground border-t border-gray-200">
         <div className="container">
-          <p>© 2025 VideoSoundEvent UA</p>
+          <p>© 2015-2025 VideoSoundEvent UA</p>
         </div>
       </footer>
       <Toaster position="top-right" />
