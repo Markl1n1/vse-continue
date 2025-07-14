@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     fs: {
-      allow: ['src/pages/api'], // Allow serving API files
+      allow: ['api'], // Updated to allow the new /api/ directory
     },
   },
   plugins: [
