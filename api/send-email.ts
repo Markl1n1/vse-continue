@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import fetch from "node-fetch";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(
@@ -17,7 +18,13 @@ export default async function handler(
       req.body;
 
     if (!name || !phone || !productName || !price || !time) {
-      console.error("Missing required fields:", { name, phone, productName, price, time });
+      console.error("Missing required fields:", {
+        name,
+        phone,
+        productName,
+        price,
+        time,
+      });
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -27,8 +34,8 @@ export default async function handler(
       port: 465,
       secure: true,
       auth: {
-        user: process.env.SMTP_USER || "mark.lindt.crm@gmail.com",
-        pass: process.env.SMTP_PASS || "efnk zbyn soda uotw",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
@@ -44,13 +51,38 @@ export default async function handler(
       });
     }
 
+    // Prepare email attachments and content
+    const attachments = [];
+    let imageHtml = image ? `<p>Image: <a href="${image}">${image}</a></p>` : "<p>Image: No image</p>";
+
+    // Fetch and attach image if provided
+    if (image) {
+      try {
+        const imageResponse = await fetch(image);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        }
+        const imageBuffer = await imageResponse.buffer();
+        const imageContentType = imageResponse.headers.get("content-type") || "image/jpeg";
+
+        attachments.push({
+          filename: "product-image.jpg",
+          content: imageBuffer,
+          cid: "product@image", // Unique Content-ID for embedding
+        });
+
+        imageHtml = `<p><img src="cid:product@image" alt="Product Image" style="max-width: 100%; height: auto;" /></p>`;
+      } catch (fetchError: any) {
+        console.error("Failed to fetch image:", fetchError.message);
+        imageHtml = `<p>Image: <a href="${image}">${image}</a> (Failed to embed)</p>`;
+      }
+    }
+
     // Prepare email content
     const mailOptions = {
-      from: `"Callback" <${process.env.SMTP_USER || "mark.lindt.crm@gmail.com"}>`,
-      to: process.env.SMTP_TO || "mark.lindt.crm@gmail.com",
-      subject: `New request: ${
-        Array.isArray(productName) ? productName.join(", ") : productName
-      }`,
+      from: `"Callback" <${process.env.SMTP_USER}>`,
+      to: process.env.SMTP_TO || process.env.SMTP_USER,
+      subject: `Order: ${name}`,
       text: `
         Name: ${name}
         Phone: ${phone}
@@ -62,6 +94,21 @@ export default async function handler(
         Description: ${description || "No description"}
         Image: ${image || "No image"}
       `,
+      html: `
+        <h2>Order Details</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Product(s):</strong> ${
+          Array.isArray(productName) ? productName.join(", ") : productName
+        }</p>
+        <p><strong>Price(s):</strong> ${
+          Array.isArray(price) ? price.join(", ") : price
+        }</p>
+        <p><strong>Time:</strong> ${time}</p>
+        <p><strong>Description:</strong> ${description || "No description"}</p>
+        ${imageHtml}
+      `,
+      attachments,
     };
 
     // Send email
