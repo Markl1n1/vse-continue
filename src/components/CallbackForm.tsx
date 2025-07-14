@@ -57,101 +57,83 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
+const onSubmit = async (data: FormValues) => {
+  setIsSubmitting(true);
 
-    // Aggregate product details by name, summing quantities and prices
-    const productMap = productDetails.reduce((acc, item) => {
-      const existing = acc[item.name] || { count: 0, totalPrice: 0, image: item.image };
-      return {
-        ...acc,
-        [item.name]: {
-          count: existing.count + 1,
-          totalPrice: existing.totalPrice + parseFloat(item.price),
-          image: item.image, // Keep the first image
-        },
-      };
-    }, {} as Record<string, { count: number; totalPrice: number; image: string }>);
+  const productNames = productDetails.map((item) => item.name).join(", ");
+  const productPrices = productDetails.map((item) => item.price).join(", ");
 
-    // Format product names as "<count> x <name>" and collect total prices
-    const productNames = Object.entries(productMap)
-      .map(([name, { count }]) => (count > 1 ? `${count} x ${name}` : name))
-      .join(", ");
-    const productPrices = Object.values(productMap)
-      .map(({ totalPrice }) => totalPrice.toFixed(2))
-      .join(", ");
+  const payload = {
+    order_id: `order_${Date.now()}`,
+    name: data.name,
+    phone: data.phone,
+    product_names: productNames,
+    prices: productPrices,
+    description: data.description || "No description",
+    image: productDetails.length > 0 ? productDetails[0].image : "",
+    created_at: new Date().toISOString(),
+  };
 
-    const payload = {
-      order_id: `order_${Date.now()}`,
+  try {
+    // Submit to Google Sheet via /api/submit
+    console.log("Calling /api/submit with payload:", payload);
+    const sheetResponse = await fetch("/api/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([payload]), // Google Apps Script expects an array
+    });
+
+    console.log("Google Sheet response status:", sheetResponse.status);
+    const sheetResult = await sheetResponse.json();
+
+    if (!sheetResponse.ok) {
+      console.error("Google Sheet submission failed:", sheetResult);
+      throw new Error(
+        sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`,
+      );
+    }
+
+    // Call /api/send-email with adjusted payload
+    const emailPayload = {
       name: data.name,
       phone: data.phone,
-      product_names: productNames || "No products",
-      prices: productPrices || "0.00",
+      productName: productNames,
+      price: productPrices,
+      time: payload.created_at,
       description: data.description || "No description",
       image: productDetails.length > 0 ? productDetails[0].image : "",
-      created_at: new Date().toISOString(),
     };
 
-    try {
-      // Submit to Google Sheet via /api/submit
-      console.log("Calling /api/submit with payload:", payload);
-      const sheetResponse = await fetch("/api/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([payload]), // Google Apps Script expects an array
-      });
+    console.log("Calling /api/send-email with payload:", emailPayload);
+    const emailResponse = await fetch("/api/send-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailPayload),
+    });
 
-      console.log("Google Sheet response status:", sheetResponse.status);
-      const sheetResult = await sheetResponse.json();
+    const emailResult = await emailResponse.json();
 
-      if (!sheetResponse.ok) {
-        console.error("Google Sheet submission failed:", sheetResult);
-        throw new Error(
-          sheetResult.message || `HTTP error! Status: ${sheetResponse.status}`,
-        );
-      }
-
-      // Call /api/send-email with adjusted payload
-      const emailPayload = {
-        name: data.name,
-        phone: data.phone,
-        productName: productNames || "No products",
-        price: productPrices || "0.00",
-        time: payload.created_at,
-        description: data.description || "No description",
-        image: productDetails.length > 0 ? productDetails[0].image : "",
-      };
-
-      console.log("Calling /api/send-email with payload:", emailPayload);
-      const emailResponse = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailPayload),
-      });
-
-      const emailResult = await emailResponse.json();
-
-      if (!emailResponse.ok) {
-        console.error("Email submission failed:", emailResult);
-        throw new Error(
-          emailResult.message || `HTTP error! Status: ${emailResponse.status}`,
-        );
-      }
-
-      toast.success(t("callback_success"));
-      form.reset();
-      onSuccess?.();
-    } catch (error: any) {
-      console.error("Error submitting form:", error.message, error.stack);
-      toast.error(`Submission error: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
+    if (!emailResponse.ok) {
+      console.error("Email submission failed:", emailResult);
+      throw new Error(
+        emailResult.message || `HTTP error! Status: ${emailResponse.status}`,
+      );
     }
-  };
+
+    toast.success(t("callback_success"));
+    form.reset();
+    onSuccess?.();
+  } catch (error: any) {
+    console.error("Error submitting form:", error.message, error.stack);
+    toast.error(`Submission error: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const placeholders = {
     name: {
