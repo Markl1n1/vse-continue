@@ -78,8 +78,9 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
     ];
 
     try {
+      console.log("Sending payload:", payload); // Log payload for debugging
       const response = await fetch(
-        "https://script.google.com/macros/s/AKfycbwZMxEr1PDsq57uhhgfx5yo_vO-ECniO7evp1v3eRS_Klyb6kCakD5dxrd0OGkIkArBJQ/exec", // Replace with your Web App URL
+        "https://script.google.com/macros/s/AKfycbwZMxEr1PDsq57uhhgfx5yo_vO-ECniO7evp1v3eRS_Klyb6kCakD5dxrd0OGkIkArBJQ/exec",
         {
           method: "POST",
           headers: {
@@ -89,10 +90,11 @@ const CallbackForm: React.FC<CallbackFormProps> = ({
         }
       );
 
+      console.log("Response status:", response.status); // Log status
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to submit form");
+        throw new Error(result.message || `HTTP error! Status: ${response.status}`);
       }
 
       toast.success(t("callback_success"));
