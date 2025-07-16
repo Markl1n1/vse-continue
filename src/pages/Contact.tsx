@@ -18,16 +18,16 @@ const Contact: React.FC = () => {
 
   const contactInfo = {
     address: {
-      ua: "вул. Київська 25, Київ, Україна",
-      ru: "ул. Киевская 25, Киев, Украина",
-      en: "25 Kyivska St., Kyiv, Ukraine",
+      ua: "вул. Йорданська 7, Київ, Україна",
+      ru: "ул. Иорданская 7, Киев, Украина",
+      en: "7 Yordanska St., Kyiv, Ukraine",
     },
-    phone: "+380 44 123 4567",
-    email: "info@vsoundevents.ua",
+    phone: "+380 93 576 5000",
+    email: "videosoundevent@gmail.com",
     hours: {
-      ua: "Пн-Пт: 9:00 - 18:00, Сб: 10:00 - 15:00",
-      ru: "Пн-Пт: 9:00 - 18:00, Сб: 10:00 - 15:00",
-      en: "Mon-Fri: 9:00 - 18:00, Sat: 10:00 - 15:00",
+      ua: "Цілодобово",
+      ru: "Круглосуточно",
+      en: "Around the clock",
     },
     title: {
       ua: "Контактна інформація",
