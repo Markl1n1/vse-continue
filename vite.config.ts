@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     fs: {
-      allow: ['api'], // Updated to allow the new /api/ directory
+      allow: ['api'], // Retain existing API directory access
     },
   },
   plugins: [
@@ -22,4 +22,12 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      input: 'index.html', // Ensure index.html as entry point
+    },
+  },
+  base: '/', // Set base URL for correct asset loading on Vercel
 }));
